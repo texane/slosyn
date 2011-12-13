@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Tue Nov 17 04:21:01 2009 fabien le mentec
-** Last update Tue Dec 13 08:55:13 2011 fabien le mentec
+** Last update Tue Dec 13 10:19:09 2011 fabien le mentec
 */
 
 
@@ -53,7 +53,7 @@ struct slosyn_handle
   } while (0)
 
 
-/* m600 command */
+/* slosyn command */
 
 union slosyn_cmd
 {
@@ -754,246 +754,94 @@ void slosyn_close(slosyn_handle_t* handle)
 }
 
 
-#if 0 /* TODO_M600_PORT */
-
-slosyn_error_t slosyn_read_alarms
-(slosyn_handle_t* handle, slosyn_alarms_t* alarms)
+slosyn_error_t slosyn_echo
+(slosyn_handle_t* h, uint8_t* buf, size_t size)
 {
   slosyn_error_t error;
   slosyn_cmd_t cmd;
 
-  *alarms = 0;
+  if (*size > SLOSYN_NCHARS_MAX) return SLOSYN_ERROR_EINVAL;
 
-  cmd.req = SLOSYN_REQ_READ_ALARMS;
+  cmd.req.req = SLOSYN_REQ_ECHO;
+  cmd.req.nchars = size;
 
   error = send_recv_cmd_or_reopen(handle, &cmd);
-  if (error != SLOSYN_ERROR_SUCCESS)
-    return error;
+  if (error != SLOSYN_ERROR_SUCCESS) return error;
 
-  *alarms = cmd.rep.alarms;
+  if (cmd.rep.nchars != size) return SLOSYN_ERROR_EINVAL;
+
+  memcpy(buf, cmd.rep.chars, size);
 
   return SLOSYN_ERROR_SUCCESS;
 }
 
 
-slosyn_error_t m600_read_cards
-(slosyn_handle_t* handle, unsigned int count, m600_cardfn_t fn, void* ctx)
+slosyn_error_t slosyn_get_state
+(slosyn_handle_t* h, slosyn_bitmap_t* b)
 {
   slosyn_error_t error;
-  m600_alarms_t alarms;
   slosyn_cmd_t cmd;
 
-  /* check for device alarms */
-  error = m600_read_alarms(handle, &alarms);
-  if (error != SLOSYN_ERROR_SUCCESS)
-    GOTO_ERROR(error);
+  cmd.req.req = SLOSYN_REQ_STATE;
 
-  if (alarms)
+  error = send_recv_cmd_or_reopen(handle, &cmd);
+  if (error != SLOSYN_ERROR_SUCCESS) return error;
+
+  *b = cmd.rep.status;
+
+  return SLOSYN_ERROR_SUCCESS;
+}
+
+
+slosyn_error_t slosyn_read_chars
+(slosyn_handle_t* h, unsigned int dir, uint8_t* buf, size_t* nchars)
+{
+  slosyn_cmd_t cmd;
+  unsigned int nloops;
+  unsigned int i;
+  size_t nread = 0;
+  size_t npad;
+
+  nloops = *nchars / SLOSYN_NCHARS_MAX;
+  for (i = 0; i < nloops; ++i)
   {
-    /* reset the device if not ready */
-    if (M600_IS_SINGLE_ALARM(alarms, NOT_READY))
-    {
-      unsigned int retries;
-
-      error = reset_m600(handle);
-      if (error != SLOSYN_ERROR_SUCCESS)
-	GOTO_ERROR(error);
-
-      /* wait for at most 8 secondes */
-      for (retries = 0; retries < 8; ++retries)
-      {
-	int is_ready;
-
-	usleep(1000000);
-
-	error = is_m600_ready(handle, &is_ready);
-	if (error != SLOSYN_ERROR_SUCCESS)
-	  GOTO_ERROR(error);
-
-	if (is_ready)
-	  break;
-      }
-    }
-    else /* NOT_READY not the only alarm */
-    {
-      if (fn != NULL)
-	fn(NULL, alarms, ctx);
-      GOTO_ERROR(SLOSYN_ERROR_SUCCESS);
-    }
-  }
-
-  /* read count cards */
-  for (; count; --count)
-  {
-    cmd.req = M600_REQ_READ_CARD;
+    cmd.req.req = SLOSYN_REQ_READ;
+    cmd.req.dir = dir;
+    cmd.req.nchars = SLOSYN_NCHARS_MAX;
 
     error = send_recv_cmd_or_reopen(handle, &cmd);
-    if (error != SLOSYN_ERROR_SUCCESS)
-      GOTO_ERROR(error);
+    if (error != SLOSYN_ERROR_SUCCESS) return error;
 
-    if ((fn != NULL) && fn(cmd.rep.card_data, cmd.rep.alarms, ctx))
-      break;
+    nread += cmd.rep.nchars;
+
+    /* fewer chars may have been read */
+    if (cmd.rep.nchars != SLOSYN_NCHARS_MAX) goto on_done;
   }
 
- on_error:
-  return error;
-}
-
-
-static void alarms_to_bitmap(m600_bitmap_t* bitmap, m600_alarms_t alarms)
-{
-  switch (alarms)
+  npad = (*nchars) % SLOSYN_NCHARS_MAX;
+  if (npad)
   {
-  case M600_ALARM_ERROR:
-    *bitmap |= M600_BIT_SLOSYN_ERROR;
-    break;
+    cmd.req.req = SLOSYN_REQ_READ;
+    cmd.req.dir = dir;
+    cmd.req.nchars = npad;
 
-  case M600_ALARM_HOPPER_CHECK:
-    *bitmap |= M600_BIT_HOPPER_CHECK;
-    break;
+    error = send_recv_cmd_or_reopen(handle, &cmd);
+    if (error != SLOSYN_ERROR_SUCCESS) return error;
 
-  case M600_ALARM_MOTION_CHECK:
-    *bitmap |= M600_BIT_MOTION_CHECK;
-    break;
-
-  case M600_ALARM_NOT_READY:
-    *bitmap |= M600_BIT_NOT_READY;
-    break;
-
-  default:
-    break;
-  }
-}
-
-
-static void error_to_bitmap(m600_bitmap_t* bitmap, slosyn_error_t error)
-{
-  switch (error)
-  {
-  case SLOSYN_ERROR_NOT_FOUND:
-    *bitmap |= M600_BIT_NOT_CONNECTED;
-    break;
-
-  default:
-    *bitmap |= M600_BIT_UNDEF;
-    break;
-  }
-}
-
-
-/* buffer containing the last read card */
-static unsigned int card_buffer[M600_COLUMN_COUNT];
-
-static int convert_buffer
-(const uint16_t* buffer, m600_alarms_t alarms, void* palarms)
-{
-  unsigned int i;
-
-  *(m600_alarms_t*)palarms = alarms;
-  if (alarms)
-    return 0;
-
-  for (i = 0; i < M600_COLUMN_COUNT; ++i)
-  {
-    /* sdcc stores numbers in little endian */
-    card_buffer[i] = le16_to_mach(buffer[i]);
+    nread += rep->nchars;
   }
 
-  return 0;
-}
-
-
-m600_bitmap_t m600_read_card(slosyn_handle_t* handle)
-{
-  m600_bitmap_t bitmap = 0;
-  slosyn_error_t error;
-  m600_alarms_t alarms;
-
-  error = m600_read_cards(handle, 1, convert_buffer, &alarms);
-  if (error != SLOSYN_ERROR_SUCCESS)
-    error_to_bitmap(&bitmap, error);
-  else if (alarms)
-    alarms_to_bitmap(&bitmap, alarms);
-
-  return bitmap;
-}
-
-
-void m600_get_card_buffer(const void** buffer)
-{
-  *buffer = card_buffer;
-}
-
-
-m600_bitmap_t m600_get_state(slosyn_handle_t* handle)
-{
-  m600_bitmap_t bitmap = 0;
-  slosyn_error_t error;
-  m600_alarms_t alarms;
-
-  if (find_m600_device() == -1)
-    return M600_BIT_NOT_CONNECTED;
-
-  error = m600_read_alarms(handle, &alarms);
-  if (error != SLOSYN_ERROR_SUCCESS)
-    error_to_bitmap(&bitmap, error);
-  else if (alarms)
-    alarms_to_bitmap(&bitmap, alarms);
-
-  return bitmap;
-}
-
-
-/* above routines are for testing */
-
-static void __attribute__((unused)) print_reply(const m600_reply_t* rep)
-{
-  const unsigned char* p = (const unsigned char*)rep;
-  unsigned int i;
-
-  for (i = 0; i < 32; ++i, ++p)
-  {
-    if (i && !(i % 8))
-      printf("\n");
-
-    printf(" %02x", *p);
-  }
-
-  printf("\n");
-}
-
-
-slosyn_error_t m600_fill_data(slosyn_handle_t* handle, uint16_t* data)
-{
-  slosyn_error_t error;
-  slosyn_cmd_t cmd;
-
-  cmd.req = M600_REQ_FILL_DATA;
-
-  error = send_recv_cmd_or_reopen(handle, &cmd);
-  if (error != SLOSYN_ERROR_SUCCESS)
-    return error;
-
-  memcpy(data, cmd.rep.card_data, sizeof(cmd.rep.card_data));
-
+ on_done:
+  *nchars = nread;
   return SLOSYN_ERROR_SUCCESS;
 }
 
 
-slosyn_error_t m600_read_pins(slosyn_handle_t* handle, uint8_t* data)
+slosyn_error_t slosyn_rewind
+(slosyn_handle_t* h, unsigned int dir)
 {
-  slosyn_error_t error;
   slosyn_cmd_t cmd;
-
-  cmd.req = M600_REQ_READ_PINS;
-
-  error = send_recv_cmd_or_reopen(handle, &cmd);
-  if (error != SLOSYN_ERROR_SUCCESS)
-    return error;
-
-  memcpy(data, cmd.rep.card_data, M600_PIN_COUNT / 8);
-
-  return SLOSYN_ERROR_SUCCESS;
+  cmd.req.req = SLOSYN_REQ_REWIND;
+  cmd.req.dir = dir;
+  return send_recv_cmd_or_reopen(handle, &cmd);
 }
-
-#endif /* TODO_M600_PORT */

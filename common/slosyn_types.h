@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Wed Nov 11 15:33:43 2009 texane
-** Last update Tue Dec 13 08:23:11 2011 fabien le mentec
+** Last update Tue Dec 13 10:14:34 2011 fabien le mentec
 */
 
 
@@ -25,10 +25,10 @@
 struct slosyn_request
 {
   /* command */
-#define SLOSYN_REQ_READ_CHARS 0
+#define SLOSYN_REQ_READ 0
 #define SLOSYN_REQ_REWIND 1
 #define SLOSYN_REQ_ECHO 2
-#define SLOSYN_REQ_READ_PINS 3
+#define SLOSYN_REQ_STATE 2
 #define SLOSYN_REQ_INVALID (slosyn_request_t)-1
   uint8_t req;
 
@@ -51,12 +51,14 @@ __attribute__((packed))
 
 typedef struct slosyn_request slosyn_request_t;
 
+typedef uint8_t slosyn_bitmap_t;
+
 struct slosyn_reply
 {
-  /* end of band */
-#define SLOSYN_STATUS_NONE 0
-#define SLOSYN_STATUS_EOB (1 << 0)
-  uint8_t status;
+#define SLOSYN_BIT_EOB (1 << 0) /* end of band */
+  slosyn_bitmap_t status;
+
+  uint8_t nchars;
 
 #define SLOSYN_NCHARS_MAX 80
   uint8_t chars[SLOSYN_NCHARS_MAX];
