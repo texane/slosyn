@@ -10,7 +10,7 @@
 #include <pic18fregs.h>
 #include "ep2.h"
 #include "stdint.h"
-#include "../../../common/slosyn_types.h"
+#include "../../common/slosyn_types.h"
 
 
 /* globals */
@@ -46,7 +46,7 @@ static uint8_t is_eob(void)
 static void wait_pulse(void)
 {
   /* wait more than 50 usecs */
-  volatile uint8_t i;
+  volatile uint16_t i;
   for (i = 0; i < 1000; ++i) ;
 }
 
@@ -133,10 +133,7 @@ void slosyn_setup(void)
   SLOSYN_PIN_PULSE_BWD = 0;
   SLOSYN_TRIS_PULSE_BWD = 0;
 
-  reset_device();
-
   /* automaton state */
-
   slosyn_request.req = SLOSYN_REQ_INVALID;
 }
 
@@ -146,6 +143,14 @@ void slosyn_start_request(slosyn_request_t* req)
   slosyn_request.req = req->req;
   slosyn_request.nchars = req->nchars;
   slosyn_request.dir = req->dir;
+
+  if (req->req == SLOSYN_REQ_ECHO)
+  {
+    uint8_t i;
+    uint8_t nchars = SLOSYN_NCHARS_MAX;
+    if (req->nchars < SLOSYN_NCHARS_MAX) nchars = req->nchars;
+    for (i = 0; i < nchars; ++i) slosyn_request.chars[i] = req->chars[i];
+  }
 }
 
 
@@ -175,13 +180,13 @@ void slosyn_schedule(void)
       unsigned int i;
       unsigned int nchars;
 
-      if (slosyn_req.nchars < SLOSYN_NCHARS_MAX)
+      if (slosyn_request.nchars < SLOSYN_NCHARS_MAX)
 	nchars = slosyn_request.nchars;
       else
 	nchars = SLOSYN_NCHARS_MAX;
 
       for (i = 0; i < nchars; ++i)
-	slosyn_reply.chars[nchars - i - 1] = slosyn_request.chars[i];
+	slosyn_reply.chars[i] = slosyn_request.chars[nchars - i - 1];
       slosyn_reply.nchars = nchars;
 
       do_reply = 1;
@@ -191,8 +196,8 @@ void slosyn_schedule(void)
 
   case SLOSYN_REQ_STATE:
     {
-      slosyn_reply.bitmap = 0;
-      if (is_eob()) slosyn_reply.bitmap |= SLOSYN_BIT_EOB;
+      slosyn_reply.status = 0;
+      if (is_eob()) slosyn_reply.status |= SLOSYN_BIT_EOB;
       do_reply = 1;
       break ;
     }

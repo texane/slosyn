@@ -18,10 +18,10 @@
 #define WAIT_OUT            2
 
 #pragma udata usb_buf SetupBuffer
-volatile far StandardRequest SetupBuffer;
+volatile __far StandardRequest SetupBuffer;
 
 #pragma udata usb_buf InBuffer
-volatile far uchar InBuffer[EP0_BUFFER_SIZE];
+volatile __far uchar InBuffer[EP0_BUFFER_SIZE];
 
 static uchar ep0_state;
 static uint  num_bytes_to_be_send;

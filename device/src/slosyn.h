@@ -13,7 +13,7 @@
 
 
 #include "stdint.h"
-#include "../../../common/slosyn_types.h"
+#include "../../common/slosyn_types.h"
 
 
 void slosyn_setup(void);

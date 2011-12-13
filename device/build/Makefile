@@ -6,27 +6,32 @@
 ##
 
 
-PATH	:=	$(PATH):/usr/share/pk2
+PATH	:=	$(PATH):$(HOME)/install/bin:$(HOME)/install/share/pk2cmd
+SDCC_DIR:=	$(HOME)/install
+GPUTILS_DIR:=	$(HOME)/install
 
 RM	:=	-rm
 MV	:=	mv
 
-CC	:=	/home/texane/proj/present/pic/18f4550/tools/sdcc/bin/sdcc
-CFLAGS	:=	-mpic16						\
-		--model-large					\
+CC	:=	$(SDCC_DIR)/bin/sdcc
+CFLAGS	:=	--disable-warning 196				\
+		-mpic16						\
 		-p18f4550 -Dpic18f4550				\
 		-DSDCC_PIC18					\
+		-I$(GPUTILS_DIR)/share/gputils/header 		\
+		-I$(HOME)/repo/sdcc/device/non-free/include/pic16 \
 		-I../src
 
 AS	:=	gpasm
 ASFLAGS	:=	-q -p18f4550 -Dpic18f4550 			\
-		-I /usr/share/gputils/header 			\
+		-I $(GPUTILS_DIR)/share/gputils/header 		\
 		-DSDCC
 
 LD	:=	$(CC)
 LDFLAGS	:=	--use-crt=crt0.o				\
 		-Wl-s../src/template-18f4550.lkr,-m		\
-		-mpic16 -p18f4550
+		-mpic16 -p18f4550				\
+		-L$(HOME)/repo/sdcc/device/non-free/lib/build/pic16
 LIBS	:=	-llibdev18f4550.lib -llibsdcc.lib -llibc18f.lib
 
 LIB	:=	gplib -c
@@ -40,8 +45,7 @@ CSRCS	:=	../src/main.c 			\
 		../src/ep1.c			\
 		../src/ep2.c			\
 		../src/usb.c			\
-		../src/usb_descriptors.c	\
-		../src/osc.c
+		../src/usb_descriptors.c
 ASRCS	:=
 
 OBJS	:=	$(CSRCS:.c=.o)			\

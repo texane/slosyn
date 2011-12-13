@@ -15,11 +15,6 @@
 /* include stdint before */
 
 
-/* for testing, 4 ports * 8 pins */
-
-#define SLOSYN_PIN_COUNT 32
-
-
 /* protocol related types */
 
 struct slosyn_request
@@ -29,7 +24,7 @@ struct slosyn_request
 #define SLOSYN_REQ_REWIND 1
 #define SLOSYN_REQ_ECHO 2
 #define SLOSYN_REQ_STATE 3
-#define SLOSYN_REQ_INVALID (slosyn_request_t)-1
+#define SLOSYN_REQ_INVALID ((uint8_t)-1)
   uint8_t req;
 
   /* how many chars. 0 for inf.
@@ -37,7 +32,7 @@ struct slosyn_request
      bigger read request are handle by chunks.
    */
 #define SLOSYN_NCHARS_INF 0
-#define SLOSYN_NCHARS_MAX 32
+#define SLOSYN_NCHARS_MAX 64
   uint8_t nchars;
 
   /* forward, backward direction */

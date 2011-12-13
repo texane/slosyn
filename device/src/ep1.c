@@ -14,7 +14,7 @@
 #include "usb.h"
 #include "stdint.h"
 #include "slosyn.h"
-#include "../../../common/slosyn_types.h"
+#include "../../common/slosyn_types.h"
 
 
 

@@ -722,11 +722,16 @@ slosyn_error_t slosyn_echo
 
   cmd.req.req = SLOSYN_REQ_ECHO;
   cmd.req.nchars = size;
+  memcpy(cmd.req.chars, buf, size);
 
   error = send_recv_cmd_or_reopen(handle, &cmd);
   if (error != SLOSYN_ERROR_SUCCESS) return error;
 
-  if (cmd.rep.nchars != size) return SLOSYN_ERROR_EINVAL;
+  if (cmd.rep.nchars != size)
+  {
+    DEBUG_ERROR("nchars(%u) != size(%u)\n", cmd.rep.nchars, size);
+    return SLOSYN_ERROR_EINVAL;
+  }
 
   memcpy(buf, cmd.rep.chars, size);
 

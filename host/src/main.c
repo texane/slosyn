@@ -46,7 +46,7 @@ int main(int ac, char** av)
       goto on_error;
     }
 
-    strcpy((char*)buffer, s);
+    memcpy((char*)buffer, s, size);
 
     serr = slosyn_echo(handle, buffer, size);
     if (serr != SLOSYN_ERROR_SUCCESS)
