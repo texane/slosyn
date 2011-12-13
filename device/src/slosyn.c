@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Wed Nov 11 14:00:09 2009 texane
-** Last update Tue Dec 13 11:13:30 2011 fabien le mentec
+** Last update Tue Dec 13 11:18:02 2011 fabien le mentec
 */
 
 
@@ -29,6 +29,18 @@ static slosyn_reply_t slosyn_reply;
 
 #define SLOSYN_PIN_PULSE_BWD LATAbits.LATA1
 #define SLOSYN_TRIS_PULSE_BWD TRISAbits.TRISA1
+
+
+/* which one... have to look at schems */
+#define IS_EOB(__c) (((__c) == 0) || ((__c) == 0xff))
+
+
+static uint8_t is_eob(void)
+{
+  /* is end of band */
+  uint8_t c = SLOSYN_PORT_DATA;
+  return IS_EOB(c);
+}
 
 
 static void wait_pulse(void)
@@ -61,9 +73,7 @@ static uint8_t read_nchars
     }
 
     buf[i] = SLOSYN_PORT_DATA;
-
-    /* which one... have to look at schems */
-    if ((buf[i] == 0x00) || (buf[i] == 0xff)) break ;
+    if (IS_EOB(buf[i])) break ;
   }
 
   return i;
@@ -94,9 +104,7 @@ static void rewind(uint8_t dir)
     }
 
     c = SLOSYN_PORT_DATA;
-
-    /* which one... have to look at schems */
-    if ((c == 0x00) || (c == 0xff)) break ;
+    if (IS_EOB(c)) break ;
   }
 }
 
@@ -182,14 +190,19 @@ void slosyn_schedule(void)
     }
 
   case SLOSYN_REQ_STATE:
-    /* TODO: read a char and see if endofband */
-    do_reply = 1;
-    break ;
+    {
+      slosyn_reply.bitmap = 0;
+      if (is_eob()) slosyn_reply.bitmap |= SLOSYN_BIT_EOB;
+      do_reply = 1;
+      break ;
+    }
 
   default:
-    /* TODO */
-    do_reply = 0;
-    break ;
+    {
+      /* TODO */
+      do_reply = 0;
+      break ;
+    }
   }
 
   slosyn_request.req = SLOSYN_REQ_INVALID;
