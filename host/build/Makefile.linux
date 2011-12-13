@@ -1,0 +1,35 @@
+##
+## Made by fabien le mentec <texane@gmail.com>
+## 
+## Started on  Sun Oct 25 10:42:55 2009 texane
+## Last update Tue Dec 13 08:38:23 2011 fabien le mentec
+##
+
+
+
+CC	:=	gcc
+LD	:=	gcc
+#CFLAGS	:=	-Wall -Werror -D_DEBUG=1 -I/home/texane/install/include -I../src
+CFLAGS	:=	-Wall -D_DEBUG=1 -I../src
+LFLAGS	:=	-L/home/texane/install/lib -lusb
+RM	:=	rm -f
+
+
+BIN	:=	m600
+
+SRCS	:=	../src/main.c		\
+		../src/slosyn.c
+
+OBJS	:=	$(SRCS:.c=.o)
+
+
+all	:	$(BIN)
+$(BIN)	:	$(OBJS)
+		$(LD) $(LFLAGS) -o $(BIN) $(OBJS)
+clean	:
+		$(RM) $(OBJS)
+fclean	:	clean
+		$(RM) $(BIN)
+re	:	fclean all
+%.o	:	%.c
+		$(CC) $(CFLAGS) -o $@ -c $<
