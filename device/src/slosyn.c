@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Wed Nov 11 14:00:09 2009 texane
-** Last update Tue Dec 13 11:00:12 2011 fabien le mentec
+** Last update Tue Dec 13 11:13:30 2011 fabien le mentec
 */
 
 
@@ -31,128 +31,74 @@ static slosyn_reply_t slosyn_reply;
 #define SLOSYN_TRIS_PULSE_BWD TRISAbits.TRISA1
 
 
-#if 0 /* TODO_M600_PORT */
-
-/* initiate a read cycle and read card contents */
-
-static m600_alarms_t m600_read_card(uint16_t* col_data)
+static void wait_pulse(void)
 {
-  unsigned int col_count = M600_COLUMN_COUNT;
-  unsigned int countdown;
-
-#if 0 /* simple_test */
-
-  /* wait for the ready conditions(p.38)
-     ready is 4v if there is no card
-     ready is 0v if there are cards
-   */
-  while (M600_PIN_NOT_READY)
-    ;
-
-  /* wait for previous cycle to end
-     0v indicates busy is true
-   */
-  while (!M600_PIN_BUSY)
-    ;
-
-#endif
-
-  /* initiate a read cycle. according
-     to the documentation (p.38), it
-     is better to wait for the busy
-     condition than idling for 1usecs
-     but practically it doesnot seem
-     to work, so we wait.
-   */
-
-  M600_PIN_PICK_CMD = 0;
-
-#if 0 /* wait for the cycle to start */
-  while (!M600_PIN_BUSY)
-  {
-    /* an error occured. 6 attempts are made
-       every 50 ms, for a total of 300ms max
-    */
-
-    if (!M600_PIN_ERROR)
-    {
-      M600_PIN_PICK_CMD = 1;
-      return m600_read_alarms();
-    }
-  }
-#else /* wait a bit for the cycle to start */
-  for (countdown = 0x100; countdown > 0; --countdown)
-    ;
-#endif
-
-  M600_PIN_PICK_CMD = 1;
-
-  /* read the data */
-
-  /* very approximative constant */
-#define COUNTDOWN_10MS 15000
-  countdown = COUNTDOWN_10MS;
-
-  while (col_count)
-  {
-    /* wait for the INDEX_MARK signal to
-       become true. it indicates data is
-       available (ie. storage completed).
-       the mark are generated periodically
-       every 864 usecs on the M600.
-    */
-
-#if 0
-    if ((--countdown) == 0)
-      return (M600_ALARM_ERROR | m600_read_alarms());
-#else
-#if 0
-    if (M600_IS_ANY_ERROR())
-      return (M600_ALARM_ERROR | m600_read_alarms());
-#endif
-#endif
-
-    if (!M600_PIN_INDEX_MARK)
-    {
-      /* data available. the index mark
-	 signal held true for 6 usecs
-      */
-
-#if 0
-      /* reload the countdown */
-      countdown = COUNTDOWN_10MS;
-#endif
-
-      while (!M600_PIN_INDEX_MARK)
-      {
-#if 0
-	if (!(--countdown))
-	  return (M600_ALARM_ERROR | m600_read_alarms());
-#else
-#if 0
-	if (M600_IS_ANY_ERROR())
-	  return (M600_ALARM_ERROR | m600_read_alarms());
-#endif
-#endif
-      }
-
-      *col_data = read_data_reg();
-
-#if 0
-      /* reload the countdown */
-      countdown = COUNTDOWN_10MS;
-#endif
-
-      /* advance position */
-      ++col_data;
-      --col_count;
-    }
-  }
-
-  return M600_ALARM_NONE;
+  /* wait more than 50 usecs */
+  volatile uint8_t i;
+  for (i = 0; i < 1000; ++i) ;
 }
 
-#endif /* TODO_M600_PORT */
+
+static uint8_t read_nchars
+(uint8_t* buf, uint8_t nchars, uint8_t dir)
+{
+  uint8_t i;
+
+  for (i = 0; i < nchars; ++i)
+  {
+    /* pulse for more than 50us */
+    if (dir == SLOSYN_DIR_FWD)
+    {
+      SLOSYN_PIN_PULSE_FWD = 1;
+      wait_pulse();
+      SLOSYN_PIN_PULSE_FWD = 0;
+    }
+    else
+    {
+      SLOSYN_PIN_PULSE_BWD = 1;
+      wait_pulse();
+      SLOSYN_PIN_PULSE_BWD = 0;
+    }
+
+    buf[i] = SLOSYN_PORT_DATA;
+
+    /* which one... have to look at schems */
+    if ((buf[i] == 0x00) || (buf[i] == 0xff)) break ;
+  }
+
+  return i;
+}
+
+
+static void rewind(uint8_t dir)
+{
+  /* TODO: counter or timeout to limit looping if
+     end of band not detected */
+
+  uint8_t c;
+
+  while (1)
+  {
+    /* pulse for more than 50us */
+    if (dir == SLOSYN_DIR_FWD)
+    {
+      SLOSYN_PIN_PULSE_FWD = 1;
+      wait_pulse();
+      SLOSYN_PIN_PULSE_FWD = 0;
+    }
+    else
+    {
+      SLOSYN_PIN_PULSE_BWD = 1;
+      wait_pulse();
+      SLOSYN_PIN_PULSE_BWD = 0;
+    }
+
+    c = SLOSYN_PORT_DATA;
+
+    /* which one... have to look at schems */
+    if ((c == 0x00) || (c == 0xff)) break ;
+  }
+}
 
 
 /* exported */
@@ -203,16 +149,15 @@ void slosyn_schedule(void)
   {
   case SLOSYN_REQ_READ:
     {
-      /* TODO */
-      slosyn_reply.nchars = 1;
-      slosyn_reply.chars[0] = '*';
+      slosyn_reply.nchars = read_nchars
+	(slosyn_reply.chars, slosyn_request.nchars, slosyn_request.dir);
       do_reply = 1;
       break ;
     }
 
   case SLOSYN_REQ_REWIND:
     {
-      /* TODO */
+      rewind(slosyn_request.dir);
       do_reply = 1;
       break ;
     }
@@ -237,7 +182,7 @@ void slosyn_schedule(void)
     }
 
   case SLOSYN_REQ_STATE:
-    /* TODO */
+    /* TODO: read a char and see if endofband */
     do_reply = 1;
     break ;
 
