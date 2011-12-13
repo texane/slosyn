@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Wed Nov 11 15:33:43 2009 texane
-** Last update Tue Dec 13 10:14:34 2011 fabien le mentec
+** Last update Tue Dec 13 10:59:09 2011 fabien le mentec
 */
 
 
@@ -28,7 +28,7 @@ struct slosyn_request
 #define SLOSYN_REQ_READ 0
 #define SLOSYN_REQ_REWIND 1
 #define SLOSYN_REQ_ECHO 2
-#define SLOSYN_REQ_STATE 2
+#define SLOSYN_REQ_STATE 3
 #define SLOSYN_REQ_INVALID (slosyn_request_t)-1
   uint8_t req;
 
@@ -37,12 +37,15 @@ struct slosyn_request
      bigger read request are handle by chunks.
    */
 #define SLOSYN_NCHARS_INF 0
+#define SLOSYN_NCHARS_MAX 32
   uint8_t nchars;
 
   /* forward, backward direction */
 #define SLOSYN_DIR_FWD 0
 #define SLOSYN_DIR_BWD 1
   uint8_t dir;
+
+  uint8_t chars[SLOSYN_NCHARS_MAX];
 }
 #ifndef SDCC
 __attribute__((packed))
@@ -60,7 +63,6 @@ struct slosyn_reply
 
   uint8_t nchars;
 
-#define SLOSYN_NCHARS_MAX 80
   uint8_t chars[SLOSYN_NCHARS_MAX];
 }
 #ifndef SDCC

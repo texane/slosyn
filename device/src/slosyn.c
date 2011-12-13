@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Wed Nov 11 14:00:09 2009 texane
-** Last update Tue Dec 13 10:47:11 2011 fabien le mentec
+** Last update Tue Dec 13 11:00:12 2011 fabien le mentec
 */
 
 
@@ -174,10 +174,10 @@ void slosyn_setup(void)
   SLOSYN_TRIS_DATA = 0xff;
 
   /* outputs */
-  SLOSYN_TRIS_PULSE_FWD = 0;
   SLOSYN_PIN_PULSE_FWD = 0;
-  SLOSYN_TRIS_PULSE_BWD = 0;
+  SLOSYN_TRIS_PULSE_FWD = 0;
   SLOSYN_PIN_PULSE_BWD = 0;
+  SLOSYN_TRIS_PULSE_BWD = 0;
 
   reset_device();
 
@@ -197,80 +197,59 @@ void slosyn_start_request(slosyn_request_t* req)
 
 void slosyn_schedule(void)
 {
-  unsigned char do_reply;
-
-#if 0 /* TODO_M600_PORT */
+  unsigned char do_reply = 0;
 
   switch (slosyn_request.req)
+  {
+  case SLOSYN_REQ_READ:
     {
-    case M600_REQ_READ_CARD:
-      {
-	m600_reply.alarms = m600_read_card(m600_reply.card_data);
-
-	do_reply = 1;
-
-	break;
-      }
-
-    case M600_REQ_READ_ALARMS:
-      {
-	m600_reply.alarms = m600_read_alarms();
-
-	do_reply = 1;
-
-	break;
-      }
-
-    case M600_REQ_FILL_DATA:
-      {
-	uint16_t i;
-
-	for (i = 0; i < M600_COLUMN_COUNT; ++i)
-	  m600_reply.card_data[i] = i;
-
-	do_reply = 1;
-
-	break;
-      }
-
-    case M600_REQ_READ_PINS:
-      {
-	uint8_t* const p = (uint8_t*)m600_reply.card_data;
-
-	p[0] = PORTA;
-	p[1] = PORTB;
-	p[2] = PORTC;
-	p[3] = PORTD;
-
-	do_reply = 1;
-
-	break;
-      }
-
-    case M600_REQ_RESET_DEV:
-      {
-	/* wait for the ready signal is done in userland */
-
-	reset_device();
-	do_reply = 1;
-	break;
-      }
-
-    case M600_REQ_INVALID:
-    default:
-      {
-	do_reply = 0;
-
-	break;
-      }
+      /* TODO */
+      slosyn_reply.nchars = 1;
+      slosyn_reply.chars[0] = '*';
+      do_reply = 1;
+      break ;
     }
 
-#endif /* TODO_M600_PORT */
+  case SLOSYN_REQ_REWIND:
+    {
+      /* TODO */
+      do_reply = 1;
+      break ;
+    }
+
+  case SLOSYN_REQ_ECHO:
+    {
+      unsigned int i;
+      unsigned int nchars;
+
+      if (slosyn_req.nchars < SLOSYN_NCHARS_MAX)
+	nchars = slosyn_request.nchars;
+      else
+	nchars = SLOSYN_NCHARS_MAX;
+
+      for (i = 0; i < nchars; ++i)
+	slosyn_reply.chars[nchars - i - 1] = slosyn_request.chars[i];
+      slosyn_reply.nchars = nchars;
+
+      do_reply = 1;
+
+      break ;
+    }
+
+  case SLOSYN_REQ_STATE:
+    /* TODO */
+    do_reply = 1;
+    break ;
+
+  default:
+    /* TODO */
+    do_reply = 0;
+    break ;
+  }
 
   slosyn_request.req = SLOSYN_REQ_INVALID;
 
-  if (!do_reply)
-    return ;
+  if (!do_reply) return ;
 
   /* reply to the host */
 
