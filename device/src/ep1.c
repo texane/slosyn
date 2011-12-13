@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Thu Nov 19 20:20:29 2009 texane
-** Last update Tue Dec 13 08:32:26 2011 fabien le mentec
+** Last update Tue Dec 13 10:32:56 2011 fabien le mentec
 */
 
 
@@ -33,16 +33,14 @@ void ep1_out(void)
 {
   if (EP_OUT_BD(1).Cnt >= 1)
     {
-#if 0 /* TODO_PORT_M600 */
-      switch(*(m600_request_t*)ep1_OutBuffer)
+      switch(((slosyn_request_t*)ep1_OutBuffer)->req)
         {
-	case M600_REQ_READ_CARD:
-	case M600_REQ_READ_ALARMS:
-	case M600_REQ_FILL_DATA:
-	case M600_REQ_READ_PINS:
-	case M600_REQ_RESET_DEV:
+	case SLOSYN_REQ_READ:
+	case SLOSYN_REQ_REWIND:
+	case SLOSYN_REQ_ECHO:
+	case SLOSYN_REQ_STATE:
 	  {
-	    m600_start_request(*(m600_request_t*)ep1_OutBuffer);
+	    slosyn_start_request((slosyn_request_t*)ep1_OutBuffer);
 	    break;
 	  }
 
@@ -54,7 +52,6 @@ void ep1_out(void)
 	    break;
 	  }
         }
-#endif /* TODO_PORT_M600 */
 
       EP_OUT_BD(1).Cnt = EP1_BUFFER_SIZE;
 

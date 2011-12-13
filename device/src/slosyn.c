@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Wed Nov 11 14:00:09 2009 texane
-** Last update Tue Dec 13 08:30:11 2011 fabien le mentec
+** Last update Tue Dec 13 10:47:11 2011 fabien le mentec
 */
 
 
@@ -13,90 +13,25 @@
 #include "../../../common/slosyn_types.h"
 
 
-#if 0 /* TODO_PORT_M600 */
+/* globals */
 
-/* m600 globals */
-
-static m600_request_t m600_request = M600_REQ_INVALID;
-
-static m600_reply_t m600_reply;
+static slosyn_request_t slosyn_request;
+static slosyn_reply_t slosyn_reply;
 
 
-/* m600 pinouts */
+/* pinouts */
 
-#define M600_PORT_DATA_LOW PORTB
-#define M600_TRIS_DATA_LOW TRISB
+#define SLOSYN_PORT_DATA PORTB
+#define SLOSYN_TRIS_DATA TRISB
 
-/* note: some PORTA high bits not
-   available and will be read as
-   0. since we need to read 12bits
-   values, we only care about the
-   first nibble.
- */
+#define SLOSYN_PIN_PULSE_FWD LATAbits.LATA0
+#define SLOSYN_TRIS_PULSE_FWD TRISAbits.TRISA0
 
-#define M600_PORT_DATA_HIGH PORTA
-#define M600_TRIS_DATA_HIGH TRISA
-
-#define M600_PORT_ALARMS PORTD
-#define M600_TRIS_ALARMS TRISD
-#define M600_PIN_ERROR PORTDbits.RD0
-#define M600_PIN_HOPPER_CHECK PORTDbits.RD1
-#define M600_PIN_MOTION_CHECK PORTDbits.RD2
-
-#define M600_IS_ANY_ERROR() ((PORTD & ((1 << 3) - 1)) != (0x7))
-
-#define M600_TRIS_PICK_CMD TRISDbits.TRISD3
-#define M600_PIN_PICK_CMD LATDbits.LATD3
-
-#define M600_TRIS_RESET_CMD TRISDbits.TRISD4
-#define M600_PIN_RESET_CMD LATDbits.LATD4
-
-#define M600_TRIS_INDEX_MARK TRISCbits.TRISC0
-#define M600_PIN_INDEX_MARK PORTCbits.RC0
-
-#define M600_TRIS_NOT_READY TRISCbits.TRISC1
-#define M600_PIN_NOT_READY PORTCbits.RC1
-
-#define M600_TRIS_BUSY TRISCbits.TRISC2
-#define M600_PIN_BUSY PORTCbits.RC2
+#define SLOSYN_PIN_PULSE_BWD LATAbits.LATA1
+#define SLOSYN_TRIS_PULSE_BWD TRISAbits.TRISA1
 
 
-/* read alarm signals */
-
-static m600_alarms_t m600_read_alarms(void)
-{
-  m600_alarms_t alarms = M600_ALARM_NONE;
-
-#define SET_ALARM_IF_ASSERTED(E, C)		\
-  do {						\
-    if (M600_PIN_ ## C)				\
-      M600_SET_ALARM(E, C);			\
-  } while (0)
-
-#define SET_ALARM_IF_NOT_ASSERTED(E, C)		\
-  do {						\
-    if ((M600_PIN_ ## C) == 0)			\
-      M600_SET_ALARM(E, C);			\
-  } while (0)
-
-  SET_ALARM_IF_NOT_ASSERTED(alarms, ERROR);
-  SET_ALARM_IF_NOT_ASSERTED(alarms, HOPPER_CHECK);
-  SET_ALARM_IF_NOT_ASSERTED(alarms, MOTION_CHECK);
-  SET_ALARM_IF_ASSERTED(alarms, NOT_READY);
-
-  return alarms;
-}
-
-
-/* read the 12bits data register */
-
-static uint16_t read_data_reg(void)
-{
-  return
-    (((unsigned int)M600_PORT_DATA_HIGH << 8) |
-     M600_PORT_DATA_LOW) & 0x0fff;
-}
-
+#if 0 /* TODO_M600_PORT */
 
 /* initiate a read cycle and read card contents */
 
@@ -217,26 +152,12 @@ static m600_alarms_t m600_read_card(uint16_t* col_data)
   return M600_ALARM_NONE;
 }
 
-
-static void reset_device(void)
-{
-  /* reset the m600 device */
-
-  unsigned int countdown;
-
-  M600_TRIS_RESET_CMD = 0;
-  M600_PIN_RESET_CMD = 0;
-
-  for (countdown = 20000; countdown; --countdown)
-    ;
-
-  M600_PIN_RESET_CMD = 1;
-}
+#endif /* TODO_M600_PORT */
 
 
 /* exported */
 
-void m600_setup(void)
+void slosyn_setup(void)
 {
   /* have to do configure the ports as digital
      io, otherwise they will be in analog mode
@@ -250,44 +171,37 @@ void m600_setup(void)
   SPPCON = 0;
 
   /* inputs */
-  M600_TRIS_DATA_LOW = 1;
-  M600_TRIS_DATA_HIGH = 1;
-  M600_TRIS_ALARMS = 1;
-  M600_TRIS_INDEX_MARK = 1;
-  M600_TRIS_NOT_READY = 1;
-  M600_TRIS_BUSY = 1;
+  SLOSYN_TRIS_DATA = 0xff;
 
   /* outputs */
-
-  M600_TRIS_RESET_CMD = 0;
-  M600_PIN_RESET_CMD = 1;
-
-  /* note: must come after the
-     alarm tris is set since this
-     overlap with same register */
-
-  M600_TRIS_PICK_CMD = 0;
-  M600_PIN_PICK_CMD = 1;
+  SLOSYN_TRIS_PULSE_FWD = 0;
+  SLOSYN_PIN_PULSE_FWD = 0;
+  SLOSYN_TRIS_PULSE_BWD = 0;
+  SLOSYN_PIN_PULSE_BWD = 0;
 
   reset_device();
 
   /* automaton state */
 
-  m600_request = M600_REQ_INVALID;
+  slosyn_request.req = SLOSYN_REQ_INVALID;
 }
 
 
-void m600_start_request(m600_request_t req)
+void slosyn_start_request(slosyn_request_t* req)
 {
-  m600_request = req;
+  slosyn_request.req = req->req;
+  slosyn_request.nchars = req->nchars;
+  slosyn_request.dir = req->dir;
 }
 
 
-void m600_schedule(void)
+void slosyn_schedule(void)
 {
   unsigned char do_reply;
 
-  switch (m600_request)
+#if 0 /* TODO_M600_PORT */
+
+  switch (slosyn_request.req)
     {
     case M600_REQ_READ_CARD:
       {
@@ -349,33 +263,18 @@ void m600_schedule(void)
 
 	break;
       }
-
     }
 
-  m600_request = M600_REQ_INVALID;
+#endif /* TODO_M600_PORT */
+
+  slosyn_request.req = SLOSYN_REQ_INVALID;
 
   if (!do_reply)
     return ;
 
   /* reply to the host */
 
-  ep2_num_bytes_to_send = sizeof(m600_reply_t);
-  ep2_source_data = (void*)&m600_reply;
+  ep2_num_bytes_to_send = sizeof(slosyn_reply_t);
+  ep2_source_data = (void*)&slosyn_reply;
   prepare_ep2_in();
 }
-
-
-#if 0
-void m600_print_signals(void)
-{
-  print_pin(M600_PIN_ERROR);
-  print_pin(M600_PIN_HOPPER_CHECK);
-  print_pin(M600_PIN_MOTION_CHECK);
-
-  print_pin(M600_PIN_INDEX_MARK);
-  print_pin(M600_PIN_NOT_READY);
-  print_pin(M600_PIN_BUSY);
-}
-#endif
-
-#endif /* TODO_PORT_M600 */

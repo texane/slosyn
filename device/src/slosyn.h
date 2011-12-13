@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Wed Nov 11 13:59:45 2009 texane
-** Last update Tue Dec 13 08:30:38 2011 fabien le mentec
+** Last update Tue Dec 13 10:33:22 2011 fabien le mentec
 */
 
 
@@ -17,7 +17,7 @@
 
 
 void slosyn_setup(void);
-void slosyn_start_request(slosyn_request_t);
+void slosyn_start_request(slosyn_request_t*);
 void slosyn_schedule(void);
 void slosyn_print_signals(void);
 
