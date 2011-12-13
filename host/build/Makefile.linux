@@ -11,11 +11,11 @@ CC	:=	gcc
 LD	:=	gcc
 #CFLAGS	:=	-Wall -Werror -D_DEBUG=1 -I/home/texane/install/include -I../src
 CFLAGS	:=	-Wall -D_DEBUG=1 -I../src
-LFLAGS	:=	-L/home/texane/install/lib -lusb
+LFLAGS	:=	-L$(HOME)/lib -lusb
 RM	:=	rm -f
 
 
-BIN	:=	m600
+BIN	:=	slosyn
 
 SRCS	:=	../src/main.c		\
 		../src/slosyn.c

@@ -22,8 +22,8 @@
 
 #include "debug.h"
 #include "slosyn.h"
-#include "../../common/slosyn.h"
-#include "../../../common/slosyn_types.h"
+#include "../../common/slosyn_usb.h"
+#include "../../common/slosyn_types.h"
 
 
 
@@ -108,9 +108,9 @@ static void free_slosyn_handle(slosyn_handle_t* handle)
 
 #if CONFIG_LIBUSB_VERSION
 
-static slosyn_error_t __attribute__((unused)) usb_to_m600_error(int ue)
+static slosyn_error_t __attribute__((unused)) usb_to_slosyn_error(int ue)
 {
-  return M600_ERROR_LIBUSB;
+  return SLOSYN_ERROR_LIBUSB;
 }
 
 #else
@@ -713,12 +713,12 @@ void slosyn_close(slosyn_handle_t* handle)
 
 
 slosyn_error_t slosyn_echo
-(slosyn_handle_t* h, uint8_t* buf, size_t size)
+(slosyn_handle_t* handle, uint8_t* buf, size_t size)
 {
   slosyn_error_t error;
   slosyn_cmd_t cmd;
 
-  if (*size > SLOSYN_NCHARS_MAX) return SLOSYN_ERROR_EINVAL;
+  if (size > SLOSYN_NCHARS_MAX) return SLOSYN_ERROR_EINVAL;
 
   cmd.req.req = SLOSYN_REQ_ECHO;
   cmd.req.nchars = size;
@@ -735,7 +735,7 @@ slosyn_error_t slosyn_echo
 
 
 slosyn_error_t slosyn_get_state
-(slosyn_handle_t* h, slosyn_bitmap_t* b)
+(slosyn_handle_t* handle, slosyn_bitmap_t* b)
 {
   slosyn_error_t error;
   slosyn_cmd_t cmd;
@@ -752,8 +752,9 @@ slosyn_error_t slosyn_get_state
 
 
 slosyn_error_t slosyn_read_chars
-(slosyn_handle_t* h, unsigned int dir, uint8_t* buf, size_t* nchars)
+(slosyn_handle_t* handle, unsigned int dir, uint8_t* buf, size_t* nchars)
 {
+  slosyn_error_t error;
   slosyn_cmd_t cmd;
   unsigned int nloops;
   unsigned int i;
@@ -786,7 +787,7 @@ slosyn_error_t slosyn_read_chars
     error = send_recv_cmd_or_reopen(handle, &cmd);
     if (error != SLOSYN_ERROR_SUCCESS) return error;
 
-    nread += rep->nchars;
+    nread += cmd.rep.nchars;
   }
 
  on_done:
@@ -796,7 +797,7 @@ slosyn_error_t slosyn_read_chars
 
 
 slosyn_error_t slosyn_rewind
-(slosyn_handle_t* h, unsigned int dir)
+(slosyn_handle_t* handle, unsigned int dir)
 {
   slosyn_cmd_t cmd;
   cmd.req.req = SLOSYN_REQ_REWIND;

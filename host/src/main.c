@@ -13,7 +13,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "slosyn.h"
-#include "../../../common/slosyn_types.h"
+#include "../../common/slosyn_types.h"
 
 
 
@@ -46,7 +46,7 @@ int main(int ac, char** av)
       goto on_error;
     }
 
-    strcpy(buffer, s);
+    strcpy((char*)buffer, s);
 
     serr = slosyn_echo(handle, buffer, size);
     if (serr != SLOSYN_ERROR_SUCCESS)
