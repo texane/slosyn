@@ -2,7 +2,7 @@
 ** Made by fabien le mentec <texane@gmail.com>
 ** 
 ** Started on  Tue Nov 17 04:21:01 2009 fabien le mentec
-** Last update Tue Dec 13 10:19:09 2011 fabien le mentec
+** Last update Tue Dec 13 10:24:08 2011 fabien le mentec
 */
 
 
@@ -446,48 +446,6 @@ static int find_slosyn_device(void)
 
   return res;
 }
-
-
-#if 0 /* TODO_M600_PORT */
-
-/* reset the device */
-
-static slosyn_error_t reset_m600(slosyn_handle_t* handle)
-{
-  slosyn_cmd_t cmd;
-  cmd.req = M600_REQ_RESET_DEV;
-  return send_recv_cmd(handle, &cmd);
-}
-
-slosyn_error_t m600_reset(slosyn_handle_t* handle)
-{
-  return reset_m600(handle);
-}
-
-#endif /* TODO_M600_PORT */
-
-
-#if 0 /* TODO_M600_PORT */
-
-/* is the device ready */
-
-static slosyn_error_t is_m600_ready(slosyn_handle_t* handle, int* is_ready)
-{
-  m600_alarms_t alarms;
-  slosyn_error_t error;
-
-  error = m600_read_alarms(handle, &alarms);
-  if (error != SLOSYN_ERROR_SUCCESS)
-    return error;
-
-  *is_ready = 1;
-  if (M600_IS_ALARM(alarms, NOT_READY))
-    *is_ready = 0;
-
-  return SLOSYN_ERROR_SUCCESS;
-}
-
-#endif /* TODO_M600_PORT */
 
 
 /* exported functions */
