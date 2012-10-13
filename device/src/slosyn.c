@@ -51,13 +51,35 @@ static void wait_pulse(void)
 }
 
 
+static void wait_data(void)
+{
+  /* wait 10 msecs (480000 cycles at 48mhz) */
+
+  volatile uint16_t i;
+  volatile uint16_t j;
+
+  for (i = 0; i < 10000; ++i) ;
+    for (j = 0; j < 10; ++j)
+      ;
+}
+
+
 static uint8_t read_nchars
 (uint8_t* buf, uint8_t nchars, uint8_t dir)
 {
+  /* FIXME: has to be added, compilation bug ? */
+#define FIXME_OFFSET 1
+
   uint8_t i;
 
   for (i = 0; i < nchars; ++i)
   {
+    /* wait for data readiness to stabilization */
+    wait_data();
+
+    buf[i + FIXME_OFFSET] = SLOSYN_PORT_DATA;
+    if (IS_EOB(buf[i + FIXME_OFFSET])) break ;
+
     /* pulse for more than 50us */
     if (dir == SLOSYN_DIR_FWD)
     {
@@ -71,9 +93,6 @@ static uint8_t read_nchars
       wait_pulse();
       SLOSYN_PIN_PULSE_BWD = 0;
     }
-
-    buf[i] = SLOSYN_PORT_DATA;
-    if (IS_EOB(buf[i])) break ;
   }
 
   return i;

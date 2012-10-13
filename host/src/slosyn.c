@@ -766,7 +766,7 @@ slosyn_error_t slosyn_read_chars
   size_t nread = 0;
   size_t npad;
 
-  nloops = *nchars / SLOSYN_NCHARS_MAX;
+  nloops = (*nchars) / SLOSYN_NCHARS_MAX;
   for (i = 0; i < nloops; ++i)
   {
     cmd.req.req = SLOSYN_REQ_READ;
@@ -775,6 +775,8 @@ slosyn_error_t slosyn_read_chars
 
     error = send_recv_cmd_or_reopen(handle, &cmd);
     if (error != SLOSYN_ERROR_SUCCESS) return error;
+
+    memcpy(buf + nread, cmd.req.chars, cmd.rep.nchars);
 
     nread += cmd.rep.nchars;
 
@@ -791,6 +793,8 @@ slosyn_error_t slosyn_read_chars
 
     error = send_recv_cmd_or_reopen(handle, &cmd);
     if (error != SLOSYN_ERROR_SUCCESS) return error;
+
+    memcpy(buf + nread, cmd.req.chars, cmd.rep.nchars);
 
     nread += cmd.rep.nchars;
   }
