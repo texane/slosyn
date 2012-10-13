@@ -58,7 +58,7 @@ static void wait_data(void)
   volatile uint16_t i;
   volatile uint16_t j;
 
-  for (i = 0; i < 10000; ++i) ;
+  for (i = 0; i < 10000; ++i)
     for (j = 0; j < 10; ++j)
       ;
 }
