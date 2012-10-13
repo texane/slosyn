@@ -54,13 +54,8 @@ static void wait_pulse(void)
 static void wait_data(void)
 {
   /* wait 10 msecs (480000 cycles at 48mhz) */
-
   volatile uint16_t i;
-  volatile uint16_t j;
-
-  for (i = 0; i < 10000; ++i)
-    for (j = 0; j < 10; ++j)
-      ;
+  for (i = 0; i < 10000; ++i) ;
 }
 
 
