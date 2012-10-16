@@ -73,7 +73,7 @@ static uint8_t read_nchars
     wait_data();
 
     buf[i + FIXME_OFFSET] = SLOSYN_PORT_DATA;
-    if (IS_EOB(buf[i + FIXME_OFFSET])) break ;
+    /* if (IS_EOB(buf[i + FIXME_OFFSET])) break ; */
 
     /* pulse for more than 50us */
     if (dir == SLOSYN_DIR_FWD)
