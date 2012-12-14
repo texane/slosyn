@@ -33,14 +33,14 @@ int main(int ac, char** av)
   if (!strcmp(opt, "echo"))
   {
     const char* s = "ping";
-    uint8_t buffer[32];
+    uint8_t buffer[SLOSYN_NCHARS_MAX];
     size_t size;
     size_t i;
 
     if (ac > 2) s = av[2];
     size = strlen(s);
 
-    if (size > (sizeof(buffer) - 1))
+    if (size > sizeof(buffer))
     {
       printf("invalid echo argument\n");
       goto on_error;

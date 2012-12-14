@@ -11,11 +11,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 #define CONFIG_LIBUSB_VERSION 1
 
 #if CONFIG_LIBUSB_VERSION
-# include "usb.h"
+# include <usb.h>
 #else
 # include <libusb-1.0/libusb.h>
 #endif
@@ -213,7 +214,6 @@ static slosyn_error_t send_recv_cmd
   usberr = usb_bulk_write
     (handle->usb_handle, handle->ep_req, (void*)&cmd->req,
      (int)sizeof(cmd->req), CONFIG_DEFAULT_TIMEOUT);
-
   if (usberr < 0)
   {
     DEBUG_ERROR("usb_bulk_write() == %d(%s)\n", usberr, usb_strerror());
@@ -223,7 +223,6 @@ static slosyn_error_t send_recv_cmd
   usberr = usb_bulk_read
     (handle->usb_handle, handle->ep_rep, (void*)&cmd->rep,
      (int)sizeof(cmd->rep), CONFIG_DEFAULT_TIMEOUT);
-
   if (usberr < 0)
   {
     DEBUG_ERROR("usb_bulk_read() == %d(%s)\n", usberr, usb_strerror());
@@ -756,6 +755,11 @@ slosyn_error_t slosyn_get_state
 }
 
 
+static inline size_t min(size_t a, size_t b)
+{
+  return a < b ? a : b;
+}
+
 slosyn_error_t slosyn_read_chars
 (slosyn_handle_t* handle, unsigned int dir, uint8_t* buf, size_t* nchars)
 {
@@ -776,6 +780,9 @@ slosyn_error_t slosyn_read_chars
     error = send_recv_cmd_or_reopen(handle, &cmd);
     if (error != SLOSYN_ERROR_SUCCESS) return error;
 
+    /* helped avoid overflow when invalid reply contents */
+    cmd.rep.nchars = min(SLOSYN_NCHARS_MAX, cmd.rep.nchars);
+
     memcpy(buf + nread, cmd.req.chars, cmd.rep.nchars);
 
     nread += cmd.rep.nchars;
@@ -793,6 +800,9 @@ slosyn_error_t slosyn_read_chars
 
     error = send_recv_cmd_or_reopen(handle, &cmd);
     if (error != SLOSYN_ERROR_SUCCESS) return error;
+
+    /* helped avoid overflow when invalid reply contents */
+    cmd.rep.nchars = min(npad, cmd.rep.nchars);
 
     memcpy(buf + nread, cmd.req.chars, cmd.rep.nchars);
 

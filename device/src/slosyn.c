@@ -62,9 +62,6 @@ static void wait_data(void)
 static uint8_t read_nchars
 (uint8_t* buf, uint8_t nchars, uint8_t dir)
 {
-  /* FIXME: has to be added, compilation bug ? */
-#define FIXME_OFFSET 1
-
   uint8_t i;
 
   for (i = 0; i < nchars; ++i)
@@ -72,8 +69,8 @@ static uint8_t read_nchars
     /* wait for data readiness to stabilization */
     wait_data();
 
-    buf[i + FIXME_OFFSET] = SLOSYN_PORT_DATA;
-    /* if (IS_EOB(buf[i + FIXME_OFFSET])) break ; */
+    buf[i + SLOSYN_FIXME_OFFSET] = SLOSYN_PORT_DATA;
+    /* if (IS_EOB(buf[i + SLOSYN_FIXME_OFFSET])) break ; */
 
     /* pulse for more than 50us */
     if (dir == SLOSYN_DIR_FWD)

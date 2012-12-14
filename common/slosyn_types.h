@@ -32,7 +32,7 @@ struct slosyn_request
      bigger read request are handle by chunks.
    */
 #define SLOSYN_NCHARS_INF 0
-#define SLOSYN_NCHARS_MAX 64
+#define SLOSYN_NCHARS_MAX 32
   uint8_t nchars;
 
   /* forward, backward direction */
@@ -40,7 +40,9 @@ struct slosyn_request
 #define SLOSYN_DIR_BWD 1
   uint8_t dir;
 
-  uint8_t chars[SLOSYN_NCHARS_MAX];
+  /* FIXME: has to be added, seems due to a SDCC compilation bug */
+#define SLOSYN_FIXME_OFFSET 1
+  uint8_t chars[SLOSYN_NCHARS_MAX + SLOSYN_FIXME_OFFSET];
 }
 #ifndef SDCC
 __attribute__((packed))
@@ -58,7 +60,7 @@ struct slosyn_reply
 
   uint8_t nchars;
 
-  uint8_t chars[SLOSYN_NCHARS_MAX];
+  uint8_t chars[SLOSYN_NCHARS_MAX + SLOSYN_FIXME_OFFSET];
 }
 #ifndef SDCC
 __attribute__((packed))

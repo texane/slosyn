@@ -9,9 +9,9 @@
 
 CC	:=	gcc
 LD	:=	gcc
-#CFLAGS	:=	-Wall -Werror -D_DEBUG=1 -I/home/texane/install/include -I../src
-CFLAGS	:=	-Wall -D_DEBUG=1 -I../src
-LFLAGS	:=	-L$(HOME)/lib -lusb
+CFLAGS	:=	-Wall -D_DEBUG=1 -I$(HOME)/tmp/install/include -I../src
+#CFLAGS	:=	-Wall -D_DEBUG=1 -I../src
+LFLAGS	:=	-L$(HOME)/tmp/install/lib -lusb
 RM	:=	rm -f
 
 
