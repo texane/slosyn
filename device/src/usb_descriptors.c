@@ -109,16 +109,12 @@ const uchar str1[] = {sizeof(str1),  STRING_DESCRIPTOR,
                                               't',0x00};
 
 const uchar str2[] = {sizeof(str2),  STRING_DESCRIPTOR,
-                                              'M',0x00,
-                                              '6',0x00,
-                                              '0',0x00,
-                                              '0',0x00,
-                                              'R',0x00,
-                                              'e',0x00,
-                                              'a',0x00,
-                                              'd',0x00,
-                                              'e',0x00,
-                                              'r',0x00};
+                                              'S',0x00,
+                                              'L',0x00,
+                                              'O',0x00,
+                                              'S',0x00,
+                                              'Y',0x00,
+                                              'N',0x00};
 
 const uchar str3[] = {sizeof(str3), STRING_DESCRIPTOR, '1',0x00};
 
