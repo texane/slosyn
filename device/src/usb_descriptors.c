@@ -21,7 +21,7 @@ const USB_Device_Descriptor boot_device_descriptor =
     0xff,                   // Protocol code
     EP0_BUFFER_SIZE,        // Max packet size for EP0
     0x2a2a,                 // Vendor ID
-    0xf00f,                 // Product ID
+    0xf00e,                 // Product ID
     0x0100,                 // Device release number in BCD format
     1,                      // Manufacturer string index
     2,                      // Product string index
